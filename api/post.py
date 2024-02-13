@@ -5,6 +5,7 @@ from datetime import datetime
 from auth_middleware import token_required
 from flask_cors import CORS
 from model.users import Post
+from sqlalchemy import func
 
 post_api = Blueprint('post_api', __name__,
                    url_prefix='/api/post')
@@ -53,9 +54,13 @@ class PostAPI:
             return {'message': f'Processed {question}, either a format error or User ID {uid} is duplicate'}, 400
 
         def get(self): # Read Method
-            posts = Post.query.all()    # read/extract all users from database
-            json_ready = [post.read() for post in posts]  # prepare output in json
-            return jsonify(json_ready)  # jsonify creates Flask response object, more specific to APIs than json.dumps
+            posts = Post.query.all()
+            json_ready = [post.read() for post in posts]
+            planets_posts = Post.query.filter(func.lower(func.trim(Post.note)).like('%planets%')).all()            
+            if not planets_posts:
+                return jsonify({"message": "No posts found with the note 'planets'"}) 
+            planets_json_ready = [post.read() for post in planets_posts]
+            return jsonify(planets_json_ready)
     
     class _Security(Resource):
         def post(self):
