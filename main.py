@@ -62,7 +62,7 @@ custom_cli = AppGroup('custom', help='Custom commands')
 def generate_data():
     initUsers()
     initPlayers()
-    initPosts()
+    #initPosts()
 
 # Register the custom command group with the Flask application
 app.cli.add_command(custom_cli)
