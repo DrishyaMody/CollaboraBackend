@@ -19,14 +19,18 @@ class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     note = db.Column(db.Text, unique=False, nullable=False)
     doq = db.Column(db.Date, unique=False)
+    parentPostId = db.Column(db.Integer,  unique=False, nullable=False)
+
     # Define a relationship in Notes Schema to userID who originates the note, many-to-one (many notes to one user)
     userID = db.Column(db.Integer, db.ForeignKey('users.id'))
 
     # Constructor of a Notes object, initializes of instance variables within object
-    def __init__(self, id, note, doq):
+    def __init__(self, id, note, doq, parentPostId):
         self.userID = id
         self.note = note
         self.doq = doq
+        self.parentPostId = parentPostId
+
 
     # Returns a string representation of the Notes object, similar to java toString()
     # returns string
@@ -59,7 +63,8 @@ class Post(db.Model):
             "id": self.id,
             "userID": self.userID,
             "note": self.note,
-            "doq": self.doq
+            "doq": self.doq,
+            "parentPostId": self.parentPostId
             #"base64": str(file_encode)
         }
 
