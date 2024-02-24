@@ -17,6 +17,8 @@ class PostAPI:
     
     class _CRUD(Resource):  # User API operation for Create, Read.  THe Update, Delete methods need to be implemeented
         
+          
+        
         def post(self): # Create method
             ''' Read data for json body '''
             body = request.get_json()
@@ -54,15 +56,39 @@ class PostAPI:
             # failure returns error
             return {'message': f'Processed {question}, either a format error or User ID {uid} is duplicate'}, 400
 
-        def get(self): # Read Method
+        def get(self):  # Read Method
+            # Check if 'id' parameter is provided
+            id = request.args.get('id')
+            if id:
+                # Query the post by id
+                post = Post.query.filter_by(id=id).first()
+                if post:
+                    return jsonify(post.read())  # Assuming 'post.read()' method returns a JSON-serializable dict
+                else:
+                    return jsonify({"message": "No post found with the id " + str(id)})
+
+            # Check if 'parentPostId' parameter is provided
+            parentPostId = request.args.get('parentPostId')
+            if parentPostId:
+                # Query posts by parentPostId
+                parent_posts = Post.query.filter_by(parentPostId=parentPostId).all()
+                if parent_posts:
+                    return jsonify([post.read() for post in parent_posts])
+                else:
+                    return jsonify({"message": "No posts found with the parentPostId " + str(parentPostId)})
+
+            # If neither 'id' nor 'parentPostId' is provided, check for 'searchString'
             searchString = request.args.get('searchString')
+            if searchString:
+                filtered_posts = Post.query.filter(func.lower(func.trim(Post.note)).like('%' + searchString.lower().strip() + '%')).all()
+                if not filtered_posts:
+                    return jsonify({"message": "No posts found with the note " + searchString})
+                return jsonify([post.read() for post in filtered_posts])
+
+            # If none of the specific filters are provided, return all posts
             posts = Post.query.all()
-            json_ready = [post.read() for post in posts]
-            filtered_posts = Post.query.filter(func.lower(func.trim(Post.note)).like('%' + searchString + '%')).all()            
-            if not filtered_posts:
-                return jsonify({"message": "No posts found with the note " + searchString}) 
-            filtered_posts_json_ready = [post.read() for post in filtered_posts]
-            return jsonify(filtered_posts_json_ready)
+            return jsonify([post.read() for post in posts])
+       
     class _Security(Resource):
         def post(self):
             try:
@@ -119,6 +145,7 @@ class PostAPI:
                 }, 500
 
             
+    # building RESTapi endpoint
     # building RESTapi endpoint
     api.add_resource(_CRUD, '/')
     #api.add_resource(_Security, '/questions')
