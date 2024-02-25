@@ -1,10 +1,11 @@
 import json, jwt
-from flask import Blueprint, request, jsonify, current_app, Response
+from flask import Blueprint, request, jsonify, current_app, Response, abort
 from flask_restful import Api, Resource # used for REST API building
 from datetime import datetime
 from auth_middleware import token_required
 from flask_cors import CORS
-from model.users import User
+from model.users import *
+
 
 user_api = Blueprint('user_api', __name__,
                    url_prefix='/api/users')
@@ -15,7 +16,6 @@ api = Api(user_api)
 class UserAPI:        
     
     class _CRUD(Resource):  # User API operation for Create, Read.  THe Update, Delete methods need to be implemeented
-
         def post(self): # Create method
             ''' Read data for json body '''
             body = request.get_json()
@@ -57,12 +57,52 @@ class UserAPI:
             # failure returns error
             return {'message': f'Processed {name}, either a format error or User ID {uid} is duplicate'}, 400
 
-        @token_required
-        def get(self, current_user): # Read Method
-            users = User.query.all()    # read/extract all users from database
-            json_ready = [user.read() for user in users]  # prepare output in json
-            return jsonify(json_ready)  # jsonify creates Flask response object, more specific to APIs than json.dumps
-    
+        
+        def get(self): # Read Method
+            uid = request.args.get('uid')
+            if uid:
+                # Query the post by id
+                user = User.query.filter_by(_uid=uid).first()
+                if user:
+                    return jsonify(user.read())  # Assuming 'post.read()' method returns a JSON-serializable dict
+                else:
+                    return jsonify({"message": "No user found with the username " + str(uid)})
+            users = User.query.all()    
+            json_ready = [user.read() for user in users]  
+            return jsonify(json_ready) 
+        
+        # @token_required
+        def put(self, id):
+            # if current_user.id != id:
+            #     abort(403)
+            user = User.query.get_or_404(id)
+            data = request.get_json()
+            user.name = data.get('name', user.name)
+            user.uid = data.get('uid', user.uid)
+            # user.password = data.get('password', user.password)
+
+            dob = data.get('dob')
+            db.session.commit()
+            
+            if dob is not None:
+                try:
+                    user.dob = datetime.strptime(dob, '%Y-%m-%d').date()
+                except:
+                    return {'message': f'Date of birth format error {dob}, must be mm-dd-yyyy'}, 400
+            
+            return jsonify(user.read())
+        
+
+
+        # @token_required
+        def delete(self, id):
+            # if current_user.id != id:
+            #     abort(403)
+            user = User.query.get_or_404(id)
+            db.session.delete(user)
+            db.session.commit()
+            return {'message': f'User deleted'}, 200
+
     class _Security(Resource):
         def post(self):
             try:
@@ -120,6 +160,6 @@ class UserAPI:
 
             
     # building RESTapi endpoint
-    api.add_resource(_CRUD, '/')
+    api.add_resource(_CRUD, '/', '/<int:id>')
     api.add_resource(_Security, '/authenticate')
     
