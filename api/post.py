@@ -87,7 +87,7 @@ class PostAPI:
 
             # If none of the specific filters are provided, return all posts
             posts = Post.query.all()
-            return jsonify([post.read() for post in posts])
+            return jsonify([post.read() for post in posts]) 
        
     class _Security(Resource):
         def post(self):
