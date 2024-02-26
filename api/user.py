@@ -82,16 +82,16 @@ class UserAPI:
             # user.password = data.get('password', user.password)
 
             dob = data.get('dob')
-            db.session.commit()
             
             if dob is not None:
                 try:
                     user.dob = datetime.strptime(dob, '%Y-%m-%d').date()
                 except:
                     return {'message': f'Date of birth format error {dob}, must be mm-dd-yyyy'}, 400
-            
+            db.session.commit()
             return jsonify(user.read())
-        
+           
+
 
 
         # @token_required
